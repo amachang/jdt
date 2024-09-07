@@ -7,6 +7,6 @@ Not so much arranged, may have many arguments, may have ugly method name, but us
 ## Installation
 
 ```sh
-cargo add --git git@github.com:amachang/jdt.git
+cargo add --git ssh://git@github.com/amachang/jdt.git
 ```
 
