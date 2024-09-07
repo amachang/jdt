@@ -1,4 +1,4 @@
-use std::{fs, path::{Path, PathBuf}, sync::Mutex};
+use std::{fs, path::{Path, PathBuf}, sync::Mutex, io};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 use once_cell::sync::Lazy;
@@ -84,6 +84,25 @@ pub fn almost_eq<F: num_traits::Float>(a: F, b: F, relative_tolerance: F) -> boo
     let min = a.min(b);
     let max = a.max(b);
     ((max - min) / max) <= relative_tolerance
+}
+
+// allow to rename file across different filesystems
+pub fn rename_file(from_path: impl AsRef<Path>, to_path: impl AsRef<Path>) -> Result<(), io::Error> {
+    let from_path = from_path.as_ref();
+    let to_path = to_path.as_ref();
+    match fs::rename(from_path, to_path) {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            match e.raw_os_error() {
+                Some(libc::EXDEV) => {
+                    fs::copy(from_path, to_path)?;
+                    fs::remove_file(from_path)?;
+                    Ok(())
+                },
+                _ => Err(e),
+            }
+        }
+    }
 }
 
 #[cfg(test)]
