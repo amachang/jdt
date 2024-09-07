@@ -80,7 +80,7 @@ pub fn walk_dir<R>(dir: impl AsRef<Path>, mut f: impl FnMut(PathBuf) -> R) -> Ve
     results
 }
 
-pub fn almost_eq(a: f64, b: f64, relative_tolerance: f64) -> bool {
+pub fn almost_eq<F: num_traits::Float>(a: F, b: F, relative_tolerance: F) -> bool {
     let min = a.min(b);
     let max = a.max(b);
     ((max - min) / max) <= relative_tolerance
