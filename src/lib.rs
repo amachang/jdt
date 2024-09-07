@@ -50,29 +50,45 @@ pub fn config<Config: Deserialize<'static> + Serialize + Default>() -> Config {
 }
 
 pub fn walk_dir<R>(dir: impl AsRef<Path>, mut f: impl FnMut(PathBuf) -> R) -> Vec<R> {
+    // must be implement no recursive
+    let mut dir_stack = vec![dir.as_ref().to_path_buf()];
     let mut results = Vec::new();
-    let iter = match fs::read_dir(dir.as_ref()) {
-        Ok(iter) => iter,
-        Err(err) => {
-            log::warn!("Ignoring error {} in {}", err, dir.as_ref().display());
-            return results;
-        }
-    };
-    for entry in iter {
-        let entry = match entry {
-            Ok(entry) => entry,
+    while let Some(dir) = dir_stack.pop() {
+        let iter = match fs::read_dir(&dir) {
+            Ok(iter) => iter,
             Err(err) => {
-                log::warn!("Ignoring error {} in {}", err, dir.as_ref().display());
+                log::warn!("Ignoring error {} in {}", err, dir.display());
                 continue;
             }
         };
-        let path = entry.path();
-        if path.is_dir() {
-            results.extend(walk_dir(&path, &mut f));
-        } else {
-            results.push(f(path));
+        for entry in iter {
+            let entry = match entry {
+                Ok(entry) => entry,
+                Err(err) => {
+                    log::warn!("Ignoring error {} in {}", err, dir.display());
+                    continue;
+                }
+            };
+            let path = entry.path();
+            if path.is_dir() {
+                dir_stack.push(path);
+            } else {
+                results.push(f(path));
+            }
         }
     }
     results
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_walk_dir() {
+        let files = walk_dir("./src", |path| path);
+        assert!(files.len() > 0);
+        assert!(files.iter().find(|path| path.ends_with("lib.rs")).is_some());
+    }
 }
 
