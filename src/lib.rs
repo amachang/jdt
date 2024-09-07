@@ -80,6 +80,12 @@ pub fn walk_dir<R>(dir: impl AsRef<Path>, mut f: impl FnMut(PathBuf) -> R) -> Ve
     results
 }
 
+pub fn almost_eq(a: f64, b: f64, relative_tolerance: f64) -> bool {
+    let min = a.min(b);
+    let max = a.max(b);
+    ((max - min) / max) <= relative_tolerance
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -89,6 +95,14 @@ mod tests {
         let files = walk_dir("./src", |path| path);
         assert!(files.len() > 0);
         assert!(files.iter().find(|path| path.ends_with("lib.rs")).is_some());
+    }
+
+    #[test]
+    fn test_almost_eq() {
+        assert!(almost_eq(1.0, 1.0, 0.0));
+        assert!(almost_eq(1.0, 1.0, 0.1));
+        assert!(almost_eq(1.0, 1.1, 0.1));
+        assert!(!almost_eq(1.0, 1.1, 0.01));
     }
 }
 
