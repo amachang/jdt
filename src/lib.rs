@@ -111,9 +111,23 @@ pub fn rename_file(from_path: impl AsRef<Path>, to_path: impl AsRef<Path>) -> Re
 pub fn eq_files(a: impl AsRef<Path>, b: impl AsRef<Path>) -> Result<bool, io::Error> {
     let a = a.as_ref();
     let b = b.as_ref();
-    let a_metadata = fs::metadata(a)?;
-    let b_metadata = fs::metadata(b)?;
-    return Ok(a_metadata.dev() == b_metadata.dev() && a_metadata.ino() == b_metadata.ino());
+    let a_metadata = metadata_if_exists(a)?;
+    let b_metadata = metadata_if_exists(b)?;
+    match (a_metadata, b_metadata) {
+        (Some(a_metadata), Some(b_metadata)) => Ok(a_metadata.dev() == b_metadata.dev() && a_metadata.ino() == b_metadata.ino()),
+        (None, None) => Err(io::Error::new(io::ErrorKind::NotFound, "Both files do not exist")),
+        _ => Ok(false),
+    }
+}
+
+pub fn metadata_if_exists(path: impl AsRef<Path>) -> Result<Option<fs::Metadata>, io::Error> {
+    match fs::metadata(path) {
+        Ok(metadata) => Ok(Some(metadata)),
+        Err(err) => match err.kind() {
+            io::ErrorKind::NotFound => Ok(None),
+            _ => Err(err),
+        }
+    }
 }
 
 #[cfg(test)]
