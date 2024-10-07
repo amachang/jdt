@@ -1,4 +1,4 @@
-use std::{fs, path::{Path, PathBuf}, io};
+use std::{fs, path::{Path, PathBuf}, io, os::unix::fs::MetadataExt};
 use dirs::config_dir;
 use serde::{Deserialize, Serialize};
 
@@ -108,6 +108,14 @@ pub fn rename_file(from_path: impl AsRef<Path>, to_path: impl AsRef<Path>) -> Re
     }
 }
 
+pub fn eq_files(a: impl AsRef<Path>, b: impl AsRef<Path>) -> Result<bool, io::Error> {
+    let a = a.as_ref();
+    let b = b.as_ref();
+    let a_metadata = fs::metadata(a)?;
+    let b_metadata = fs::metadata(b)?;
+    return Ok(a_metadata.dev() == b_metadata.dev() && a_metadata.ino() == b_metadata.ino());
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -125,6 +133,12 @@ mod tests {
         assert!(almost_eq(1.0, 1.0, 0.1));
         assert!(almost_eq(1.0, 1.1, 0.1));
         assert!(!almost_eq(1.0, 1.1, 0.01));
+    }
+
+    #[test]
+    fn test_eq_files() {
+        assert!(eq_files("./src/../src/lib.rs", "./src/lib.rs").unwrap());
+        assert!(!eq_files("./src/../src/lib.rs", "./Cargo.toml").unwrap());
     }
 }
 
