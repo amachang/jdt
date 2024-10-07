@@ -8,7 +8,7 @@ pub struct Project {
 }
 
 impl Project {
-    pub fn project(project_name: impl Into<String>) -> Self {
+    pub fn new(project_name: impl Into<String>) -> Self {
         let project_name = project_name.into();
         let config_parent_dir = config_dir().expect("Failed to get config directory");
         let config_dir = config_parent_dir.join(&project_name);
@@ -77,6 +77,10 @@ pub fn walk_dir<R>(dir: impl AsRef<Path>, mut f: impl FnMut(PathBuf) -> R) -> Ve
         }
     }
     results
+}
+
+pub fn project(project_name: impl Into<String>) -> Project {
+    Project::new(project_name)
 }
 
 pub fn almost_eq<F: num_traits::Float>(a: F, b: F, relative_tolerance: F) -> bool {
