@@ -144,7 +144,7 @@ pub fn backup(path: impl AsRef<Path>) -> Result<(), io::Error> {
             n_retries += 1;
             continue;
         }
-        fs::rename(path, &backup_path)?;
+        fs::copy(path, &backup_path)?;
         break Ok(());
     }
 }
