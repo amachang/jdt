@@ -132,6 +132,7 @@ pub fn metadata_if_exists(path: impl AsRef<Path>) -> Result<Option<fs::Metadata>
 
 pub fn backup(path: impl AsRef<Path>) -> Result<(), io::Error> {
     let path = path.as_ref();
+    let filename = path.file_name().ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid path: {}", path.display())))?;
     let mut n_retries = 0;
     loop {
         let extension = if n_retries == 0 {
@@ -139,11 +140,10 @@ pub fn backup(path: impl AsRef<Path>) -> Result<(), io::Error> {
         } else {
             format!("bak.{}", n_retries)
         };
-        let filename = path.file_name().ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid path: {}", path.display())))?;
         let mut backup_filename = filename.to_os_string();
         backup_filename.push(".");
         backup_filename.push(extension);
-        let backup_path = path.with_file_name(filename);
+        let backup_path = path.with_file_name(backup_filename);
         if backup_path.exists() {
             n_retries += 1;
             continue;
@@ -176,6 +176,16 @@ mod tests {
     fn test_eq_files() {
         assert!(eq_files("./src/../src/lib.rs", "./src/lib.rs").unwrap());
         assert!(!eq_files("./src/../src/lib.rs", "./Cargo.toml").unwrap());
+    }
+
+    #[test]
+    fn test_backup() {
+        let path = Path::new("test_backup");
+        fs::write(&path, "test").unwrap();
+        backup(&path).unwrap();
+        let backpath = Path::new("test_backup.bak");
+        fs::remove_file(&backpath).unwrap();
+        fs::remove_file(&path).unwrap();
     }
 }
 
