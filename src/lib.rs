@@ -130,6 +130,25 @@ pub fn metadata_if_exists(path: impl AsRef<Path>) -> Result<Option<fs::Metadata>
     }
 }
 
+pub fn backup(path: impl AsRef<Path>) -> Result<(), io::Error> {
+    let path = path.as_ref();
+    let mut n_retries = 0;
+    loop {
+        let extension = if n_retries == 0 {
+            "bak".to_string()
+        } else {
+            format!("bak.{}", n_retries)
+        };
+        let backup_path = path.with_extension(extension);
+        if backup_path.exists() {
+            n_retries += 1;
+            continue;
+        }
+        fs::rename(path, &backup_path)?;
+        break Ok(());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
