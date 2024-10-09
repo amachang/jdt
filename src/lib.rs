@@ -139,7 +139,11 @@ pub fn backup(path: impl AsRef<Path>) -> Result<(), io::Error> {
         } else {
             format!("bak.{}", n_retries)
         };
-        let backup_path = path.with_extension(extension);
+        let filename = path.file_name().ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, format!("Invalid path: {}", path.display())))?;
+        let mut backup_filename = filename.to_os_string();
+        backup_filename.push(".");
+        backup_filename.push(extension);
+        let backup_path = path.with_file_name(filename);
         if backup_path.exists() {
             n_retries += 1;
             continue;
